@@ -1,8 +1,6 @@
 format ELF64 executable 3
 entry start
 
-include 'std.inc'
-
 segment writeable executable
 
 start:
@@ -12,29 +10,65 @@ start:
 	pop rdi
 
 	jl .noargs
-	open rdi, 0, 0
 
-	if_error_exit
-	mov r12, 	rax
+	mov rax, 2
+	xor rsi, rsi
+	xor rdx, rdx
+	syscall
+
+	cmp rax, 0
+	jl .open_error
+	mov r12, rax
+
 .read_loop:
-	read r12, buffer, 512
-	cmp rax, 	0
-	jle .done	
-	mov r13, 	rax
+	mov rax, 0
+	mov rdi, r12
+	mov rsi, buffer
+	mov rdx, 512
+	syscall
 
-	write 1, buffer, r13 
+	cmp rax, 0
+	jle .done	
+	mov r13, rax
+
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, buffer
+	mov rdx, r13
+	syscall
 	jmp .read_loop
 
 .done:	
-	write 1, newline, 1
-	mov rax, sys_close
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, newline
+	mov rdx, 1
+	syscall
+
+	mov rax, 3
 	mov rdi, r12
 	syscall
-	exit 0
+
+	mov rax, 60
+	xor rdi, rdi
+	syscall
 
 .noargs:
-	write 2, no_args_msg, no_args_len
-	exit 1
+	mov rax, 1
+	mov rdi, 2
+	mov rsi, no_args_msg
+	mov rdx, no_args_len
+	syscall
+
+	mov rax, 60
+	mov rdi, 1
+	syscall
+
+.open_error:
+	mov rax, 60
+	mov rdi, 2
+	syscall
+
 segment readable writeable
 	newline db 10
 	no_args_msg db 'No arguments provided', 10
